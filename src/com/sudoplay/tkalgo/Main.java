@@ -23,9 +23,10 @@ public class Main {
   private boolean ready = true;
 
   private static boolean continuous = true;
+  private static boolean sleep = true;
 
   private ArrayList<String> outputText = new ArrayList<String>();
-  private Vector2i areaSize = new Vector2i(192, 192);
+  private Vector2i areaSize = new Vector2i(256 + 128, 192);
   private Vector2i areaCenter = new Vector2i(areaSize.x >> 1, areaSize.y >> 1);
   private ArrayList<Cell> cells = new ArrayList<Cell>();
   private ArrayList<Cell> fillerCells = new ArrayList<Cell>(6000);
@@ -46,7 +47,7 @@ public class Main {
   private int roomArea = 42;
   private Random randSeed = new Random();
   private XORShiftRandom rand;
-  private int cellCount = 150;
+  private int cellCount = 100;
   private int radius = 16;
   private Vector2i cellSize = new Vector2i(1, 12);
   private float loopPercentage = 0.15f;
@@ -131,6 +132,7 @@ public class Main {
       /*
        * Generate cells
        */
+      cellCount = rand.nextInt(150) + 50;
       out("   Target cell count: " + cellCount);
       out("   Generating cells...");
       for (int i = 0; i < cellCount; i++) {
@@ -183,7 +185,7 @@ public class Main {
             cell.center.set(x, y);
             cell.type = Cell.TYPE_FILL;
             fillerCells.add(cell);
-            if (fillerCells.size() % 100 == 0)
+            if (fillerCells.size() % 250 == 0)
               repaint(State.FILL);
           }
         }
@@ -252,7 +254,7 @@ public class Main {
       for (Cell room : rooms) {
         dt.insertPoint(new DT_Point(room.center.x, room.center.y));
         repaint(State.TRIANGULATE);
-        sleep(100);
+        sleep(50);
       }
       /*
        * Generate a list of edges using a disjoint-set forest. List is sorted by
@@ -279,7 +281,7 @@ public class Main {
           minTree.add(edge);
           forest.union(edge.getN1(), edge.getN2());
           repaint(State.MINSPAN);
-          sleep(100);
+          sleep(50);
         } else {
           discardEdge.add(edge);
         }
@@ -304,14 +306,14 @@ public class Main {
       loopsToAdd--;
       loopsAdded++;
       repaint(State.LOOPS);
-      sleep(100);
+      sleep(50);
       Collections.shuffle(discardEdge, rand);
       while (loopsToAdd > 0) {
         minTree.add(discardEdge.remove(discardEdge.size() - 1));
         loopsToAdd--;
         loopsAdded++;
         repaint(State.LOOPS);
-        sleep(100);
+        sleep(50);
       }
       out("   Loop edges added: " + loopsAdded);
       repaint(State.LOOPS);
@@ -399,7 +401,11 @@ public class Main {
       repaint(State.FINAL);
       ready = true;
       if (continuous) {
-        sleep(2000);
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
         nextState();
       } else {
         break;
@@ -416,15 +422,19 @@ public class Main {
   }
 
   private void repaint(State state) {
-    displayPanel.setState(state);
-    displayPanel.paintImmediately(0, 0, displaySize.x, displaySize.y);
+    if (sleep || state == State.FINAL || state == State.INIT) {
+      displayPanel.setState(state);
+      displayPanel.paintImmediately(0, 0, displaySize.x, displaySize.y);
+    }
   }
 
   private void sleep(int time) {
-    try {
-      Thread.sleep(time);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+    if (sleep) {
+      try {
+        Thread.sleep(time);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 
@@ -435,7 +445,7 @@ public class Main {
 
   private XORShiftRandom getRandom() {
     long seed = randSeed.nextLong();
-    seed = 42;
+    // seed = -3980639330455384179L; caused crash *fixed
     out("   Seed: " + seed);
     return new XORShiftRandom(seed);
   }

@@ -222,7 +222,7 @@ public class DisplayPanel extends JPanel {
   }
 
   private void drawDT(Graphics2D g2, DelaunayTriangulation dt) {
-    if (dt != null) {
+    if (dt != null && dt.size() >= 4) {
       int x1, y1, x2, y2;
       g2.setPaint(Color.YELLOW);
       Iterator<DT_Triangle> it = dt.trianglesIterator();
